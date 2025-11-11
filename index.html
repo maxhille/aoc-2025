@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<style>
+			body {
+				font-family: monospace;
+				font-size: 24px;
+				padding: 16px;
+				background-color: #2C3930;
+				color: #DCD7C9;
+			}
+
+			a {
+				color: #A27B5C;
+			}
+
+			main {
+				display: flex;
+				gap: 48px;
+			}
+
+			textarea {
+				width: 32rem;
+				height: 16rem;
+			}
+		</style>
+	</head>
+	<body>
+		<script src="main.js"></script>
+		<script>
+			const worker = new Worker("worker.js");
+			const app = Elm.Main.init();
+
+			app.ports.toWorker.subscribe( (data) => worker.postMessage(data) );
+			worker.onmessage = (e) => app.ports.fromWorker.send(e.data);
+		</script>
+	</body>
+</html>
