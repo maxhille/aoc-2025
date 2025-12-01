@@ -1,4 +1,4 @@
-module Day01 exposing (Rotation(..), parser, part1, puzzle)
+module Day01 exposing (Rotation(..), parser, part1, part2, puzzle, rotatePart2)
 
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle, Step(..))
@@ -37,6 +37,53 @@ rotatePart1 rotation dial =
     }
 
 
+rotatePart2 : Rotation -> Int -> { newZeros : Int, newDial : Int }
+rotatePart2 rotation dial =
+    let
+        newDial =
+            case rotation of
+                Left clicks ->
+                    dial - clicks |> modBy 100
+
+                Right clicks ->
+                    dial + clicks |> modBy 100
+
+        fromPosition =
+            if newDial == 0 then
+                1
+
+            else
+                0
+
+        fromTruncation =
+            case rotation of
+                Left clicks ->
+                    clicks // 100
+
+                Right clicks ->
+                    clicks // 100
+
+        fromPassing =
+            case rotation of
+                Left clicks ->
+                    if dial /= 0 && dial - (clicks |> modBy 100) < 0 then
+                        1
+
+                    else
+                        0
+
+                Right clicks ->
+                    if dial + (clicks |> modBy 100) > 100 then
+                        1
+
+                    else
+                        0
+    in
+    { newDial = newDial
+    , newZeros = fromPosition + fromTruncation + fromPassing
+    }
+
+
 part1 : Puzzle.Part
 part1 =
     Puzzle.part
@@ -45,6 +92,17 @@ part1 =
         , parser = parser
         , init = \rotations -> { rotations = rotations, zeros = 0, dial = 50 }
         , step = password rotatePart1
+        }
+
+
+part2 : Puzzle.Part
+part2 =
+    Puzzle.part
+        { view = view
+        , result = .zeros >> String.fromInt
+        , parser = parser
+        , init = \rotations -> { rotations = rotations, zeros = 0, dial = 50 }
+        , step = password rotatePart2
         }
 
 
@@ -109,4 +167,4 @@ parser =
 
 puzzle : Puzzle
 puzzle =
-    { parts = [ part1 ] }
+    { parts = [ part1, part2 ] }
