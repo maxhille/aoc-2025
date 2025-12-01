@@ -1,11 +1,12 @@
 module Shared exposing (get, puzzles)
 
-import Puzzle exposing (Puzzle)
+import Day01
+import Puzzle exposing (Part, Puzzle)
 
 
 puzzles : List (Maybe Puzzle)
 puzzles =
-    [ Nothing
+    [ Just Day01.puzzle
     , Nothing
     , Nothing
     , Nothing

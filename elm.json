@@ -1,7 +1,8 @@
 {
     "type": "application",
     "source-directories": [
-        "app"
+        "app",
+        "days"
     ],
     "elm-version": "0.19.1",
     "dependencies": {
