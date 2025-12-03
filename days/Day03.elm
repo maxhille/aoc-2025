@@ -1,7 +1,8 @@
-module Day03 exposing (bankParser, highest, parser, part1, puzzle)
+module Day03 exposing (bankParser, highest, parser, part1, part2, puzzle)
 
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle, Step(..))
+import Shared
 
 
 type alias Bank =
@@ -21,7 +22,18 @@ part1 =
         , result = .joltage >> String.fromInt
         , parser = parser
         , init = \banks -> { banks = banks, joltage = 0 }
-        , step = total
+        , step = total 2
+        }
+
+
+part2 : Puzzle.Part
+part2 =
+    Puzzle.part
+        { view = view
+        , result = .joltage >> String.fromInt
+        , parser = parser
+        , init = \banks -> { banks = banks, joltage = 0 }
+        , step = total 12
         }
 
 
@@ -32,69 +44,64 @@ view { banks, joltage } =
     ]
 
 
-total : State -> Step State
-total { banks, joltage } =
+total : Int -> State -> Step State
+total amount { banks, joltage } =
     case banks of
         bank :: rest ->
             Loop
                 { banks = rest
-                , joltage = joltage + highest bank
+                , joltage = joltage + highest amount bank
                 }
 
         [] ->
             Done { banks = [], joltage = joltage }
 
 
-highest : Bank -> Int
-highest =
-    highestHelp { max1 = 0, max2 = 0 }
+highest : Int -> Bank -> Int
+highest amount bank =
+    highestHelp [] amount bank
+        |> List.indexedMap (\i joltage -> 10 ^ i * joltage)
+        |> List.sum
 
 
-highestHelp : { max1 : Int, max2 : Int } -> Bank -> Int
-highestHelp { max1, max2 } bank =
-    case bank of
+highestHelp : Bank -> Int -> Bank -> Bank
+highestHelp turned amount bank =
+    let
+        boundedMaximum =
+            List.reverse bank
+                |> List.drop (amount - 1)
+                |> List.maximum
+                |> Maybe.withDefault 0
+    in
+    if amount == 0 then
+        turned
+
+    else
+        case dropUntilFirst boundedMaximum bank of
+            joltage :: rest ->
+                highestHelp (joltage :: turned) (amount - 1) rest
+
+            [] ->
+                turned
+
+
+dropUntilFirst : Int -> List Int -> List Int
+dropUntilFirst first ints =
+    case ints of
+        int :: rest ->
+            if int == first then
+                ints
+
+            else
+                dropUntilFirst first rest
+
         [] ->
-            max1 * 10 + max2
-
-        lastJoltage :: [] ->
-            if lastJoltage > max2 then
-                highestHelp { max1 = max1, max2 = lastJoltage } bank
-
-            else
-                highestHelp { max1 = max1, max2 = max2 } []
-
-        joltage1 :: joltage2 :: rest ->
-            if joltage1 > max1 then
-                highestHelp { max1 = joltage1, max2 = joltage2 } (joltage2 :: rest)
-
-            else if joltage1 > max2 then
-                highestHelp { max1 = max1, max2 = joltage1 } (joltage2 :: rest)
-
-            else
-                highestHelp { max1 = max1, max2 = max2 } (joltage2 :: rest)
+            []
 
 
 parser : Parser (List (List Int))
 parser =
-    linesParser bankParser
-
-
-linesParser : Parser a -> Parser (List a)
-linesParser itemParser =
-    Parser.loop [] (linesParserHelp itemParser)
-
-
-linesParserHelp : Parser a -> List a -> Parser (Parser.Step (List a) (List a))
-linesParserHelp itemParser revItems =
-    Parser.oneOf
-        [ Parser.succeed ()
-            |. Parser.end
-            |> Parser.map (\_ -> Parser.Done (List.reverse revItems))
-        , Parser.succeed (\_ -> Parser.Loop revItems)
-            |= Parser.symbol "\n"
-        , Parser.succeed (\stmt -> Parser.Loop (stmt :: revItems))
-            |= itemParser
-        ]
+    Shared.linesParser bankParser
 
 
 bankParser : Parser (List Int)
@@ -121,4 +128,4 @@ bankParser =
 
 puzzle : Puzzle
 puzzle =
-    { parts = [ part1 ] }
+    { parts = [ part1, part2 ] }

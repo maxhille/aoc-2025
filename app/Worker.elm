@@ -1,8 +1,8 @@
 port module Worker exposing (Request, Response, main)
 
+import Days exposing (get)
 import Platform
 import Puzzle exposing (Part, part)
-import Shared exposing (get)
 
 
 port fromUi : (Request -> msg) -> Sub msg

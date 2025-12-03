@@ -2,12 +2,12 @@ port module Main exposing (main)
 
 import Browser exposing (UrlRequest(..))
 import Browser.Navigation exposing (Key, load, pushUrl)
+import Days exposing (get, puzzles)
 import Html exposing (a, button, h1, h2, h3, li, main_, nav, output, p, pre, section, text, textarea, ul)
 import Html.Attributes exposing (href, spellcheck, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Parser exposing ((|.), (|=))
-import Shared exposing (get, puzzles)
 import String exposing (fromInt)
 import Url exposing (Url)
 import Worker exposing (Request, Response)

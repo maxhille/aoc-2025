@@ -24,6 +24,19 @@ suite =
                             """
                 in
                 Expect.equal "357" (example |> compute part1)
+        , test "Part 2 - Example" <|
+            \_ ->
+                let
+                    example =
+                        sanitize <|
+                            """
+                            987654321111111
+                            811111111111119
+                            234234234234278
+                            818181911112111
+                            """
+                in
+                Expect.equal "3121910778619" (example |> compute part2)
         , test "parser" <|
             \_ ->
                 let

@@ -1,31 +1,21 @@
-module Shared exposing (get, puzzles)
+module Shared exposing (linesParser)
 
-import Day01
-import Day02
-import Day03
-import Puzzle exposing (Part, Puzzle)
+import Parser exposing ((|.), (|=), Parser, Trailing(..))
 
 
-puzzles : List (Maybe Puzzle)
-puzzles =
-    [ Just Day01.puzzle
-    , Just Day02.puzzle
-    , Just Day03.puzzle
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    , Nothing
-    ]
+linesParser : Parser a -> Parser (List a)
+linesParser itemParser =
+    Parser.loop [] (linesParserHelp itemParser)
 
 
-get : Int -> Maybe Puzzle
-get day =
-    puzzles
-        |> List.drop (day - 1)
-        |> List.head
-        |> Maybe.andThen identity
+linesParserHelp : Parser a -> List a -> Parser (Parser.Step (List a) (List a))
+linesParserHelp itemParser revItems =
+    Parser.oneOf
+        [ Parser.succeed ()
+            |. Parser.end
+            |> Parser.map (\_ -> Parser.Done (List.reverse revItems))
+        , Parser.succeed (\_ -> Parser.Loop revItems)
+            |= Parser.symbol "\n"
+        , Parser.succeed (\stmt -> Parser.Loop (stmt :: revItems))
+            |= itemParser
+        ]
