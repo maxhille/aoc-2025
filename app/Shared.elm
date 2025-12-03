@@ -2,6 +2,7 @@ module Shared exposing (get, puzzles)
 
 import Day01
 import Day02
+import Day03
 import Puzzle exposing (Part, Puzzle)
 
 
@@ -9,7 +10,7 @@ puzzles : List (Maybe Puzzle)
 puzzles =
     [ Just Day01.puzzle
     , Just Day02.puzzle
-    , Nothing
+    , Just Day03.puzzle
     , Nothing
     , Nothing
     , Nothing
