@@ -6,5 +6,5 @@ sanitize =
     String.dropLeft 1
         >> String.lines
         >> (\xs -> List.take (List.length xs - 1) xs)
-        >> List.map String.trimLeft
+        >> List.map String.trim
         >> String.join "\n"
