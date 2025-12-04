@@ -3,6 +3,7 @@ module Puzzle exposing
     , Puzzle
     , Step(..)
     , compute
+    , execute
     , initPart
     , part
     , result
@@ -67,6 +68,19 @@ compute (Part p) input =
             inited.step -1
     in
     computed.result ()
+
+
+execute : (state -> Step state) -> state -> Result String state
+execute stepFn state =
+    case stepHelp stepFn (Loop state) -1 of
+        Done state2 ->
+            Ok state2
+
+        Loop _ ->
+            Err "function did not halt"
+
+        Error str ->
+            Err str
 
 
 part : { view : state -> List String, result : state -> String, parser : Parser a, init : a -> state, step : state -> Step state } -> Part

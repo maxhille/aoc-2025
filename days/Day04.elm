@@ -1,4 +1,4 @@
-module Day04 exposing (Tile(..), parser, part1, puzzle, tilesParser)
+module Day04 exposing (Tile(..), parser, part1, part2, puzzle, tilesParser)
 
 import Array
 import Grid exposing (Grid, Position)
@@ -13,22 +13,52 @@ type Tile
     | Paper
 
 
-type alias State =
+type alias State1 =
     { tiles : Grid Tile
     , accessibles : List Position
     , remaining : List Position
     }
 
 
+type alias State2 =
+    { tiles : Grid Tile
+    , removed : Int
+    }
+
+
 part1 : Puzzle.Part
 part1 =
     Puzzle.part
-        { view = view
+        { view = .tiles >> viewTiles
         , result = .accessibles >> List.length >> String.fromInt
         , parser = parser
         , init = \tiles -> { tiles = tiles, accessibles = [], remaining = positionsFromGrid tiles }
-        , step = countAccessible
+        , step = findAccessibles
         }
+
+
+part2 : Puzzle.Part
+part2 =
+    Puzzle.part
+        { view = .tiles >> viewTiles
+        , result = .removed >> String.fromInt
+        , parser = parser
+        , init = \tiles -> { tiles = tiles, removed = 0 }
+        , step = removeAccessible
+        }
+
+
+viewTiles : Grid Tile -> List String
+viewTiles =
+    Grid.view
+        (\tile ->
+            case tile of
+                Empty ->
+                    "."
+
+                Paper ->
+                    "@"
+        )
 
 
 positionsFromGrid : Grid a -> List Position
@@ -54,16 +84,45 @@ range ( x1, y1 ) ( x2, y2 ) =
         ys =
             List.range y1 y2
     in
-    List.map (\x -> List.map (\y -> ( x, y )) ys) xs |> List.concat
+    List.map (\y -> List.map (\x -> ( x, y )) xs) ys |> List.concat
 
 
-view : State -> List String
-view _ =
-    []
+removeAccessible : State2 -> Step State2
+removeAccessible { tiles, removed } =
+    let
+        result =
+            Puzzle.execute findAccessibles
+                { tiles = tiles
+                , accessibles = []
+                , remaining = positionsFromGrid tiles
+                }
+    in
+    case result of
+        Err str ->
+            Error <| "findAccessibles did not work:" ++ str
+
+        Ok { accessibles } ->
+            if accessibles == [] then
+                Done { tiles = tiles, removed = removed }
+
+            else
+                Loop
+                    { tiles =
+                        tiles
+                            |> Grid.positionedMap
+                                (\pos tile ->
+                                    if List.member pos accessibles then
+                                        Empty
+
+                                    else
+                                        tile
+                                )
+                    , removed = removed + List.length accessibles
+                    }
 
 
-countAccessible : State -> Step State
-countAccessible { tiles, remaining, accessibles } =
+findAccessibles : State1 -> Step State1
+findAccessibles { tiles, remaining, accessibles } =
     case remaining of
         [] ->
             Done { tiles = tiles, remaining = remaining, accessibles = accessibles }
@@ -118,4 +177,4 @@ tilesParser =
 
 puzzle : Puzzle
 puzzle =
-    { parts = [ part1 ] }
+    { parts = [ part1, part2 ] }

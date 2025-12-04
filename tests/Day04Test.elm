@@ -31,6 +31,25 @@ suite =
                             """
                 in
                 Expect.equal "13" (example |> compute part1)
+        , test "Part 2 - Example" <|
+            \_ ->
+                let
+                    example =
+                        sanitize <|
+                            """
+                            ..@@.@@@@.
+                            @@@.@.@.@@
+                            @@@@@.@.@@
+                            @.@@@@..@.
+                            @@.@@@@.@@
+                            .@@@@@@@.@
+                            .@.@.@.@@@
+                            @.@@@.@@@@
+                            .@@@@@@@@.
+                            @.@.@@@.@.
+                            """
+                in
+                Expect.equal "43" (example |> compute part2)
         , test "parser" <|
             \_ ->
                 let
