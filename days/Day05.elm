@@ -1,4 +1,4 @@
-module Day05 exposing (parser, part1, puzzle)
+module Day05 exposing (parser, part1, part2, puzzle)
 
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle, Step(..))
@@ -14,9 +14,15 @@ type alias Database =
     }
 
 
-type alias State =
+type alias State1 =
     { db : Database
     , fresh : Int
+    }
+
+
+type alias State2 =
+    { db : Database
+    , merged : List Range
     }
 
 
@@ -31,7 +37,54 @@ part1 =
         }
 
 
-countFresh : State -> Step State
+part2 : Puzzle.Part
+part2 =
+    Puzzle.part
+        { view = always []
+        , result =
+            .merged
+                >> List.foldl (\( lower, upper ) acc -> acc + (upper - lower + 1)) 0
+                >> String.fromInt
+        , parser = parser
+        , init =
+            \db ->
+                { db = { db | ranges = List.sortBy Tuple.first db.ranges }
+                , merged = []
+                }
+        , step = mergeRanges
+        }
+
+
+mergeRanges : State2 -> Step State2
+mergeRanges { db, merged } =
+    case db.ranges of
+        [] ->
+            Done { db = { db | ranges = [] }, merged = merged }
+
+        [ last ] ->
+            Done { db = { db | ranges = [] }, merged = last :: merged }
+
+        ( current1, current2 ) :: ( next1, next2 ) :: rest ->
+            if current2 < next1 then
+                Loop
+                    { db = { db | ranges = ( next1, next2 ) :: rest }
+                    , merged = ( current1, current2 ) :: merged
+                    }
+
+            else if next2 <= current2 then
+                Loop
+                    { db = { db | ranges = ( current1, current2 ) :: rest }
+                    , merged = merged
+                    }
+
+            else
+                Loop
+                    { db = { db | ranges = ( current1, next2 ) :: rest }
+                    , merged = merged
+                    }
+
+
+countFresh : State1 -> Step State1
 countFresh { db, fresh } =
     case db.ids of
         [] ->
@@ -107,4 +160,4 @@ parser =
 
 puzzle : Puzzle
 puzzle =
-    { parts = [ part1 ] }
+    { parts = [ part1, part2 ] }
