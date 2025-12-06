@@ -5,6 +5,7 @@ import Day02
 import Day03
 import Day04
 import Day05
+import Day06
 import Puzzle exposing (Puzzle)
 
 
@@ -15,7 +16,7 @@ puzzles =
     , Just Day03.puzzle
     , Just Day04.puzzle
     , Just Day05.puzzle
-    , Nothing
+    , Just Day06.puzzle
     , Nothing
     , Nothing
     , Nothing
