@@ -40,10 +40,10 @@ suite =
     describe "Day 8 tests"
         [ test "Part 1 - Example" <|
             \_ ->
-                Expect.equal "40" (example |> compute (part1 10))
-        , test "uniquePairs" <|
+                Expect.equal "40" (example |> compute (part1 (Just 10)))
+        , test "Part 2 - Example" <|
             \_ ->
-                Expect.equal [ ( 1, 2 ), ( 1, 3 ), ( 2, 3 ) ] ([ 1, 2, 3 ] |> uniquePairs)
+                Expect.equal "25272" (example |> compute part2)
         , test "Parser" <|
             \_ ->
                 let
@@ -56,8 +56,8 @@ suite =
                 in
                 Expect.equal
                     (Ok <|
-                        [ ( 162, 817, 812 )
-                        , ( 57, 618, 57 )
+                        [ Box 162 817 812
+                        , Box 57 618 57
                         ]
                     )
                     (Parser.run parser input)
