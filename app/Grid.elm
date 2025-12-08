@@ -1,4 +1,4 @@
-module Grid exposing (Grid, Position, fromLists, get, positionedMap, view)
+module Grid exposing (Grid, Position, fromLists, get, height, positionedMap, set, view)
 
 import Array exposing (Array)
 
@@ -27,6 +27,22 @@ view viewFn =
 get : Position -> Grid a -> Maybe a
 get ( x, y ) grid =
     Array.get y grid |> Maybe.andThen (Array.get x)
+
+
+set : Position -> a -> Grid a -> Grid a
+set ( x, y ) a grid =
+    let
+        newRow =
+            Array.get y grid
+                |> Maybe.withDefault Array.empty
+                |> Array.set x a
+    in
+    Array.set y newRow grid
+
+
+height : Grid a -> Int
+height =
+    Array.length
 
 
 fromLists : List (List a) -> Grid a
