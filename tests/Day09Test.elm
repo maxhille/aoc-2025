@@ -29,6 +29,10 @@ suite =
         [ test "Part 1 - Example" <|
             \_ ->
                 Expect.equal "50" (example |> compute part1)
+        , only <|
+            test "Part 2 - Example" <|
+                \_ ->
+                    Expect.equal "24" (example |> compute part2)
         , test "Parser" <|
             \_ ->
                 let
