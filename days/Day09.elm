@@ -108,8 +108,7 @@ largestInside state =
                         Done { state | largestArea = area rectangle }
 
                     else
-                        Loop
-                            { state | rectangles = Just rest }
+                        Loop { state | rectangles = Just rest }
 
 
 isInside : Set Tile -> Rectangle -> Bool
