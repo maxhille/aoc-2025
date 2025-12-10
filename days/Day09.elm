@@ -10,9 +10,20 @@ type alias Tile =
     ( Int, Int )
 
 
-type alias State =
-    { largest : Int
-    , toCheck : List Tile
+type alias Rectangle =
+    ( Tile, Tile )
+
+
+type alias State1 =
+    { rectangles : List Rectangle
+    , tiles : List Tile
+    }
+
+
+type alias State2 =
+    { rectangles : Maybe (List Rectangle)
+    , largestArea : Int
+    , perimeter : Set Tile
     , tiles : List Tile
     }
 
@@ -20,93 +31,89 @@ type alias State =
 part1 : Puzzle.Part
 part1 =
     Puzzle.part
-        { view = view
-        , result = .largest >> String.fromInt
+        { view = always []
+        , result =
+            .rectangles
+                >> List.head
+                >> Maybe.map area
+                >> Maybe.withDefault 0
+                >> String.fromInt
         , parser = parser
-        , init = \tiles -> { toCheck = tiles, largest = 0, tiles = tiles }
-        , step = findLargestRectangle False
+        , init = \tiles -> { tiles = tiles, rectangles = [] }
+        , step = buildAllRectangles
         }
+
+
+buildAllRectangles : State1 -> Step State1
+buildAllRectangles state =
+    case state.tiles of
+        [] ->
+            Done { state | rectangles = state.rectangles |> List.sortBy area |> List.reverse }
+
+        tile1 :: rest ->
+            Loop
+                { state
+                    | tiles = rest
+                    , rectangles = state.rectangles ++ List.map (Tuple.pair tile1) rest
+                }
 
 
 part2 : Puzzle.Part
 part2 =
     Puzzle.part
-        { view = view
-        , result = .largest >> String.fromInt
+        { view = \{ rectangles } -> [ "toCheck: " ++ (rectangles |> Maybe.withDefault [] |> List.length |> String.fromInt) ]
+        , result = .largestArea >> String.fromInt
         , parser = parser
-        , init = \tiles -> { toCheck = tiles, largest = 0, tiles = tiles }
-        , step = findLargestRectangle True
+        , init =
+            \tiles ->
+                { rectangles = Nothing
+                , largestArea = 0
+                , tiles = tiles
+                , perimeter =
+                    tiles
+                        |> List.foldl
+                            (\tile { list, last } ->
+                                { list = list ++ interpolate tile last
+                                , last = tile
+                                }
+                            )
+                            { last = tiles |> List.reverse |> List.head |> Maybe.withDefault ( 0, 0 )
+                            , list = []
+                            }
+                        |> .list
+                        |> Set.fromList
+                }
+        , step = largestInside
         }
 
 
-findLargestRectangle : Bool -> State -> Step State
-findLargestRectangle mustBeInside state =
-    case state.toCheck of
-        [] ->
-            Done state
+largestInside : State2 -> Step State2
+largestInside state =
+    case state.rectangles of
+        Nothing ->
+            case Puzzle.execute buildAllRectangles { tiles = state.tiles, rectangles = [] } of
+                Ok { rectangles } ->
+                    Loop { state | rectangles = Just rectangles }
 
-        tile1 :: rest ->
-            let
-                largest2 =
-                    rest
-                        |> List.foldl
-                            (\tile2 acc ->
-                                let
-                                    area_ =
-                                        area tile1 tile2
+                Err str ->
+                    Error <| "could not execute part1: " ++ str
 
-                                    legal =
-                                        if mustBeInside then
-                                            isInside state.tiles tile1 tile2
+        Just rectangles ->
+            case rectangles of
+                [] ->
+                    Done state
 
-                                        else
-                                            True
-                                in
-                                if area_ > acc && legal then
-                                    area_
+                rectangle :: rest ->
+                    if isInside state.perimeter rectangle then
+                        Done { state | largestArea = area rectangle }
 
-                                else
-                                    acc
-                            )
-                            state.largest
-            in
-            Loop { state | toCheck = rest, largest = largest2 }
+                    else
+                        Loop
+                            { state | rectangles = Just rest }
 
 
-isInside : List Tile -> Tile -> Tile -> Bool
-isInside tiles ( x1, y1 ) ( x2, y2 ) =
-    let
-        _ =
-            Debug.log "isInside"
-                { tile1 = ( x1, y1 )
-                , tile2 = ( x2, y2 )
-                }
-
-        perimeter =
-            let
-                start =
-                    tiles
-                        |> List.reverse
-                        |> List.head
-                        |> Maybe.withDefault ( 0, 0 )
-            in
-            tiles
-                |> List.foldl
-                    (\tile { last, list } ->
-                        let
-                            interpolated =
-                                interpolate last tile
-                        in
-                        { list = list ++ interpolated
-                        , last = tile
-                        }
-                    )
-                    { list = []
-                    , last = start
-                    }
-                |> .list
-                |> Set.fromList
-    in
+isInside : Set Tile -> Rectangle -> Bool
+isInside perimeter ( ( x1, y1 ), ( x2, y2 ) ) =
     -- (x1,y1)
     raycast (\x -> Set.member ( x, y1 ) perimeter) x1
         && raycast (\y -> Set.member ( x1, y ) perimeter) y1
@@ -128,14 +135,6 @@ raycast =
 
 raycastHelp : Bool -> Int -> (Int -> Bool) -> Int -> Bool
 raycastHelp inside val isPerimeter target =
-    let
-        _ =
-            Debug.log "raycast"
-                { inside = inside
-                , val = val
-                , target = target
-                }
-    in
     if val == target then
         inside
 
@@ -167,14 +166,9 @@ interpolate ( x1, y1 ) ( x2, y2 ) =
         List.range (min x1 x2) (max x1 x2) |> List.map (\x -> ( x, y1 ))
 
 
-area : Tile -> Tile -> Int
-area ( x1, y1 ) ( x2, y2 ) =
-    abs ((x1 - x2) + 1) * abs ((y1 - y2) + 1)
-
-
-view : State -> List String
-view =
-    always []
+area : Rectangle -> Int
+area ( ( x1, y1 ), ( x2, y2 ) ) =
+    (abs (x1 - x2) + 1) * (abs (y1 - y2) + 1)
 
 
 parser : Parser (List Tile)
