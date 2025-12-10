@@ -1,4 +1,4 @@
-module Day09 exposing (parser, part1, part2, puzzle)
+module Day09 exposing (intersect, parser, part1, part2, puzzle)
 
 import Parser exposing ((|.), (|=), Parser, Trailing(..))
 import Puzzle exposing (Puzzle, Step(..))
@@ -14,6 +14,10 @@ type alias Rectangle =
     ( Tile, Tile )
 
 
+type alias Edge =
+    ( Tile, Tile )
+
+
 type alias State1 =
     { rectangles : List Rectangle
     , tiles : List Tile
@@ -25,6 +29,7 @@ type alias State2 =
     , largestArea : Int
     , perimeter : Set Tile
     , tiles : List Tile
+    , edges : List Edge
     }
 
 
@@ -82,6 +87,18 @@ part2 =
                             }
                         |> .list
                         |> Set.fromList
+                , edges =
+                    tiles
+                        |> List.foldl
+                            (\tile { edges, last } ->
+                                { edges = ( tile, last ) :: edges
+                                , last = tile
+                                }
+                            )
+                            { last = tiles |> List.reverse |> List.head |> Maybe.withDefault ( 0, 0 )
+                            , edges = []
+                            }
+                        |> .edges
                 }
         , step = largestInside
         }
@@ -104,32 +121,65 @@ largestInside state =
                     Done state
 
                 rectangle :: rest ->
-                    if isInside state.perimeter rectangle then
+                    if isInside state.perimeter rectangle && freeOfIntersections state.edges rectangle then
                         Done { state | largestArea = area rectangle }
 
                     else
                         Loop { state | rectangles = Just rest }
 
 
+freeOfIntersections : List Edge -> Rectangle -> Bool
+freeOfIntersections edges rectangle =
+    edges
+        |> Debug.log "edges"
+        |> List.any (intersect rectangle)
+        |> not
+        |> Debug.log "freeOfIntersections"
+
+
+intersect : Rectangle -> Edge -> Bool
+intersect ( ( xr1, yr1 ), ( xr2, yr2 ) ) ( ( xe1, ye1 ), ( xe2, ye2 ) ) =
+    if xe1 == xe2 then
+        (min xr1 xr2 < xe1 && max xr1 xr2 > xe1)
+            && List.any identity
+                [ min yr1 yr2 < min ye1 ye2 && max yr1 yr2 > min ye1 ye2 -- partial from above
+                , max yr1 yr2 > max ye1 ye2 && min yr1 yr2 > max ye1 ye2 -- partial from below
+                , max yr1 yr2 < max ye1 ye2 && min yr1 yr2 > min ye1 ye2 -- full vertical intersection
+                , max yr1 yr2 >= max ye1 ye2 && min yr1 yr2 >= min ye1 ye2 -- internal vertical intersection
+                ]
+
+    else
+        -- ye1 == ye2
+        (min yr1 yr2 < ye1 && max yr1 yr2 > ye1)
+            && List.any identity
+                [ min xr1 xr2 < min xe1 xe2 && max xr1 xr2 > min xe1 xe2 -- partial from right
+                , max xr1 xr2 > max xe1 xe2 && min xr1 xr2 > max xe1 xe2 -- partial from left
+                , max xr1 xr2 < max xe1 xe2 && min xr1 xr2 > min xe1 xe2 -- full horizontal intersection
+                , max xr1 xr2 >= max xe1 xe2 && min xr1 xr2 >= min xe1 xe2 -- full internal intersection
+                ]
+
+
 isInside : Set Tile -> Rectangle -> Bool
 isInside perimeter ( ( x1, y1 ), ( x2, y2 ) ) =
-    -- (x1,y1)
-    raycast (\x -> Set.member ( x, y1 ) perimeter) x1
-        && raycast (\y -> Set.member ( x1, y ) perimeter) y1
-        -- (x2,y1)
-        && raycast (\x -> Set.member ( x, y1 ) perimeter) x2
-        && raycast (\y -> Set.member ( x2, y ) perimeter) y1
-        -- (x1,y2)
-        && raycast (\x -> Set.member ( x, y2 ) perimeter) x1
-        && raycast (\y -> Set.member ( x1, y ) perimeter) y2
-        -- (x2,y2)
-        && raycast (\x -> Set.member ( x, y2 ) perimeter) x2
-        && raycast (\y -> Set.member ( x2, y ) perimeter) y2
+    let
+        _ =
+            Debug.log "rect" <| ( ( x1, y1 ), ( x2, y2 ) )
+    in
+    [ ( (x1 + x2) // 2, (y1 + y2) // 2 )
+    ]
+        |> List.all (raycast (\tile -> Set.member tile perimeter))
+        |> Debug.log "isInside"
 
 
-raycast : (Int -> Bool) -> Int -> Bool
-raycast =
-    raycastHelp False 0
+raycast : (Tile -> Bool) -> Tile -> Bool
+raycast isPerimeter ( xt, yt ) =
+    let
+        _ =
+            Debug.log "checking"
+                { tile = ( xt, yt )
+                }
+    in
+    raycastHelp False -1 (\x -> isPerimeter ( x, yt )) xt
 
 
 raycastHelp : Bool -> Int -> (Int -> Bool) -> Int -> Bool
@@ -139,21 +189,17 @@ raycastHelp inside val isPerimeter target =
 
     else
         let
+            val2 =
+                val + 1
+
             inside2 =
-                if inside then
-                    if isPerimeter (val + 2) then
-                        not inside
-
-                    else
-                        inside
-
-                else if isPerimeter (val + 1) then
+                if isPerimeter val2 then
                     not inside
 
                 else
                     inside
         in
-        raycastHelp inside2 (val + 1) isPerimeter target
+        raycastHelp inside2 val2 isPerimeter target
 
 
 interpolate : Tile -> Tile -> List Tile

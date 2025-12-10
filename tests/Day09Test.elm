@@ -32,6 +32,9 @@ suite =
         , test "Part 2 - Example" <|
             \_ ->
                 Expect.equal "24" (example |> compute part2)
+        , test "intersect" <|
+            \_ ->
+                Expect.equal True (intersect ( ( 11, 1 ), ( 2, 5 ) ) ( ( 2, 3 ), ( 7, 3 ) ))
         , test "Parser" <|
             \_ ->
                 let
