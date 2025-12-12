@@ -131,54 +131,63 @@ largestInside state =
 freeOfIntersections : List Edge -> Rectangle -> Bool
 freeOfIntersections edges rectangle =
     edges
-        |> Debug.log "edges"
         |> List.any (intersect rectangle)
         |> not
-        |> Debug.log "freeOfIntersections"
 
 
 intersect : Rectangle -> Edge -> Bool
 intersect ( ( xr1, yr1 ), ( xr2, yr2 ) ) ( ( xe1, ye1 ), ( xe2, ye2 ) ) =
+    let
+        minX =
+            min xr1 xr2
+
+        maxX =
+            max xr1 xr2
+
+        minY =
+            min yr1 yr2
+
+        maxY =
+            max yr1 yr2
+    in
     if xe1 == xe2 then
-        (min xr1 xr2 < xe1 && max xr1 xr2 > xe1)
-            && List.any identity
-                [ min yr1 yr2 < min ye1 ye2 && max yr1 yr2 > min ye1 ye2 -- partial from above
-                , max yr1 yr2 > max ye1 ye2 && min yr1 yr2 > max ye1 ye2 -- partial from below
-                , max yr1 yr2 < max ye1 ye2 && min yr1 yr2 > min ye1 ye2 -- full vertical intersection
-                , max yr1 yr2 >= max ye1 ye2 && min yr1 yr2 >= min ye1 ye2 -- internal vertical intersection
-                ]
+        -- vertical edge
+        let
+            x =
+                xe1
+
+            yMinEdge =
+                min ye1 ye2
+
+            yMaxEdge =
+                max ye1 ye2
+        in
+        minX < x && x < maxX && (max minY yMinEdge < min maxY yMaxEdge)
 
     else
-        -- ye1 == ye2
-        (min yr1 yr2 < ye1 && max yr1 yr2 > ye1)
-            && List.any identity
-                [ min xr1 xr2 < min xe1 xe2 && max xr1 xr2 > min xe1 xe2 -- partial from right
-                , max xr1 xr2 > max xe1 xe2 && min xr1 xr2 > max xe1 xe2 -- partial from left
-                , max xr1 xr2 < max xe1 xe2 && min xr1 xr2 > min xe1 xe2 -- full horizontal intersection
-                , max xr1 xr2 >= max xe1 xe2 && min xr1 xr2 >= min xe1 xe2 -- full internal intersection
-                ]
+        -- horizontal edge
+        let
+            y =
+                ye1
+
+            xMinEdge =
+                min xe1 xe2
+
+            xMaxEdge =
+                max xe1 xe2
+        in
+        minY < y && y < maxY && (max minX xMinEdge < min maxX xMaxEdge)
 
 
 isInside : Set Tile -> Rectangle -> Bool
 isInside perimeter ( ( x1, y1 ), ( x2, y2 ) ) =
-    let
-        _ =
-            Debug.log "rect" <| ( ( x1, y1 ), ( x2, y2 ) )
-    in
     [ ( (x1 + x2) // 2, (y1 + y2) // 2 )
     ]
         |> List.all (raycast (\tile -> Set.member tile perimeter))
-        |> Debug.log "isInside"
 
 
 raycast : (Tile -> Bool) -> Tile -> Bool
 raycast isPerimeter ( xt, yt ) =
-    let
-        _ =
-            Debug.log "checking"
-                { tile = ( xt, yt )
-                }
-    in
     raycastHelp False -1 (\x -> isPerimeter ( x, yt )) xt
 
 
